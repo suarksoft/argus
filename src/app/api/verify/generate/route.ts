@@ -111,12 +111,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique code
-    let code: string;
+    let code: string = generateCode();
     let attempts = 0;
     
     while (attempts < 10) {
-      code = generateCode();
-      
       try {
         const requestsCollection = await getCollection('verification_requests');
         const existing = await requestsCollection.findOne({
@@ -125,6 +123,7 @@ export async function POST(request: NextRequest) {
         });
         
         if (!existing) break; // Code is unique
+        code = generateCode(); // Generate new code if exists
       } catch (dbError) {
         console.log('Uniqueness check skipped:', dbError);
         break; // Proceed with generated code
@@ -139,7 +138,7 @@ export async function POST(request: NextRequest) {
     try {
       const requestsCollection = await getCollection('verification_requests');
       await requestsCollection.insertOne({
-        code: code!,
+        code,
         contractId,
         network,
         status: 'PENDING',
@@ -147,7 +146,7 @@ export async function POST(request: NextRequest) {
         expiresAt,
       });
       
-      console.log('✅ Verification code generated:', code);
+      console.log('Verification code generated:', code);
     } catch (dbError) {
       console.log('DB save skipped:', dbError);
       // Continue anyway - code still works
@@ -155,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      code: code!,
+      code,
       expiresIn: 1800, // 30 minutes in seconds
       contractId,
       network,
