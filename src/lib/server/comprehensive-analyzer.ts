@@ -13,6 +13,7 @@ interface ComprehensiveAnalysis {
   activityInfo: any;
   securityInfo: any;
   communityInfo: any;
+  rawData?: any;
 }
 
 export async function analyzeAddressComprehensive(
