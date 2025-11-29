@@ -1,0 +1,43 @@
+import { Guides } from '@/components/Guides'
+import { Resources } from '@/components/Resources'
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'Argus - Stellar Security Platform',
+  description:
+    'Protect your Stellar assets with AI-powered threat detection and community intelligence.',
+}
+
+export const sections = [
+  { title: 'Features', id: 'guides' },
+  { title: 'Get Started', id: 'resources' },
+]
+
+<HeroPattern />
+
+# Argus
+
+Protect your Stellar assets with AI-powered security analysis, real-time threat detection, and community-driven intelligence. {{ className: 'lead' }}
+
+<div className="not-prose mt-6 mb-16 flex gap-3">
+  <Button href="/defense-wallet" arrow="right">
+    <>Defense Wallet</>
+  </Button>
+  <Button href="/community" variant="outline">
+    <>Intelligence Hub</>
+  </Button>
+</div>
+
+## Why Argus? {{ anchor: false }}
+
+The Stellar ecosystem needs robust security tools. Argus provides real-time protection against scams, phishing attacks, and malicious smart contracts through AI analysis and community verification. {{ className: 'lead' }}
+
+<div className="not-prose">
+  <Button href="/community/report" variant="text" arrow="right">
+    <>Report a Threat</>
+  </Button>
+</div>
+
+<Guides />
+
+<Resources />
