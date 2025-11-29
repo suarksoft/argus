@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeAddress } from '@/lib/server/risk-analyzer';
-import { generateAIExplanation, generateRecommendations } from '@/lib/server/ai';
-import { getCollection } from '@/lib/server/mongodb';
+import { analyzeAddressComprehensive } from '@/lib/server/comprehensive-analyzer';
+
+/**
+ * LEGACY ENDPOINT - Redirects to comprehensive analysis
+ * 
+ * This endpoint is kept for backward compatibility.
+ * All new code should use /api/analytics/comprehensive
+ */
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,56 +29,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Analyzing address:', address);
+    console.log('=== LEGACY ENDPOINT: Redirecting to comprehensive ===');
+    console.log('Address:', address);
 
-    // Perform analysis
-    const analysis = await analyzeAddress(address);
-
-    // Generate AI explanation
-    const aiExplanation = await generateAIExplanation({
-      ...analysis,
-      ...analysis.metadata,
-    });
-
-    // Generate recommendations
-    const recommendations = generateRecommendations({
-      ...analysis,
-      ...analysis.metadata,
-    });
-
-    // Enhanced result
-    const result = {
-      ...analysis,
-      aiExplanation,
-      recommendations,
-      analyzedAt: new Date().toISOString(),
-    };
-
-    // Log to MongoDB (async, don't block response)
-    try {
-      const logsCollection = await getCollection('analytics_logs');
-      logsCollection.insertOne({
-        type: 'address',
-        identifier: address,
-        riskScore: analysis.riskScore,
-        riskLevel: analysis.riskLevel,
-        threats: analysis.threats.map(t => t.name),
-        context,
-        createdAt: new Date(),
-      }).catch(err => console.error('Log save error:', err));
-    } catch (err) {
-      console.log('Logging skipped (DB not available)');
-    }
-
-    console.log('Analysis complete:', {
-      address,
-      riskScore: analysis.riskScore,
-      riskLevel: analysis.riskLevel,
-    });
+    // Use comprehensive analyzer (GERÇEK VERİ)
+    const analysis = await analyzeAddressComprehensive(address, context);
 
     return NextResponse.json({
       success: true,
-      data: result,
+      data: {
+        ...analysis,
+        analyzedAt: new Date().toISOString(),
+      },
     });
   } catch (error: any) {
     console.error('Address analysis error:', error);

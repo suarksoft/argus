@@ -330,6 +330,8 @@ export const SendAssetModal: React.FC<SendAssetModalProps> = ({
                   aiExplanation={analysis.aiExplanation}
                   threats={analysis.threats}
                   isAnalyzing={isAnalyzing}
+                  address={destination}
+                  communityInfo={analysis.communityInfo}
                 />
               )}
 

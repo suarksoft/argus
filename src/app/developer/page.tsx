@@ -116,7 +116,7 @@ export default function DeveloperPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-4xl">
       <div className="mb-12 text-center">
         <div className="mx-auto mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-900/50">
           <svg className="h-8 w-8 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -127,67 +127,219 @@ export default function DeveloperPage() {
           Contract Verification
         </h1>
         <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
-          Verify your Soroban smart contracts
+          Verify your Soroban smart contracts and earn a verified badge
         </p>
       </div>
 
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 p-8 ring-1 ring-zinc-900/10 dark:ring-white/10">
-        {error && (
-          <div className="mb-6 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-500/30 p-4">
-            <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p>
-          </div>
-        )}
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Left: Verification Form */}
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 p-8 ring-1 ring-zinc-900/10 dark:ring-white/10">
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-6">
+            Step 1: Generate Code
+          </h2>
+          
+          {error && (
+            <div className="mb-6 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-500/30 p-4">
+              <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p>
+            </div>
+          )}
 
-        <div className="space-y-6">
-          <div>
-            <label htmlFor="contractId" className="block text-sm font-medium text-zinc-900 dark:text-white mb-2">
-              Contract ID
-            </label>
-            <input
-              type="text"
-              id="contractId"
-              placeholder="CABCDEF123456789..."
-              value={contractId}
-              onChange={(e) => setContractId(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-3 text-sm text-zinc-900 dark:text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            />
-          </div>
+          <div className="space-y-6">
+            <div>
+              <label htmlFor="contractId" className="block text-sm font-medium text-zinc-900 dark:text-white mb-2">
+                Contract ID
+              </label>
+              <input
+                type="text"
+                id="contractId"
+                placeholder="CABCDEF123456789..."
+                value={contractId}
+                onChange={(e) => setContractId(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-3 text-sm text-zinc-900 dark:text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-900 dark:text-white mb-3">
-              Network
-            </label>
-            <div className="flex gap-6">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="testnet"
-                  checked={network === 'testnet'}
-                  onChange={(e) => setNetwork(e.target.value)}
-                  className="mr-2"
-                />
-                <span className="text-sm text-zinc-700 dark:text-zinc-300">Testnet</span>
+            <div>
+              <label className="block text-sm font-medium text-zinc-900 dark:text-white mb-3">
+                Network
               </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="mainnet"
-                  checked={network === 'mainnet'}
-                  onChange={(e) => setNetwork(e.target.value)}
-                  className="mr-2"
-                />
-                <span className="text-sm text-zinc-700 dark:text-zinc-300">Mainnet</span>
-              </label>
+              <div className="flex gap-6">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="testnet"
+                    checked={network === 'testnet'}
+                    onChange={(e) => setNetwork(e.target.value)}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300">Testnet</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="mainnet"
+                    checked={network === 'mainnet'}
+                    onChange={(e) => setNetwork(e.target.value)}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300">Mainnet</span>
+                </label>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleGenerateCode}
+              disabled={!contractId.trim() || loading}
+              className="w-full justify-center"
+            >
+              {loading ? 'Generating...' : 'Generate Verification Code'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Right: CLI Instructions */}
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 p-8 ring-1 ring-zinc-900/10 dark:ring-white/10">
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-6">
+            Step 2: Run CLI
+          </h2>
+          
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-medium text-zinc-900 dark:text-white mb-2">Quick Start (npx)</h3>
+              <div className="rounded-lg bg-zinc-950 p-4 font-mono text-sm">
+                <code className="text-emerald-400">npx argus-stellar-cli verify YOUR_CODE</code>
+              </div>
+              <p className="mt-2 text-xs text-zinc-500">No installation required</p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-zinc-900 dark:text-white mb-2">Global Install</h3>
+              <div className="rounded-lg bg-zinc-950 p-4 font-mono text-sm space-y-2">
+                <div><code className="text-zinc-400"># Install once</code></div>
+                <div><code className="text-emerald-400">npm install -g argus-stellar-cli</code></div>
+                <div className="pt-2"><code className="text-zinc-400"># Then use anywhere</code></div>
+                <div><code className="text-emerald-400">argus verify YOUR_CODE</code></div>
+              </div>
+            </div>
+
+            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4">
+              <h3 className="text-sm font-medium text-zinc-900 dark:text-white mb-3">Requirements</h3>
+              <ul className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                <li className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Run in your contract directory (with Cargo.toml)
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  WASM must be built (soroban contract build)
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Public Git repository recommended
+                </li>
+              </ul>
+            </div>
+
+            <a
+              href="https://www.npmjs.com/package/argus-stellar-cli"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              View on npm
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* How It Works Section */}
+      <div className="mt-12 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 p-8 ring-1 ring-zinc-900/5 dark:ring-white/5">
+        <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-6 text-center">
+          How Verification Works
+        </h2>
+        <div className="grid gap-6 md:grid-cols-4">
+          <div className="text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-bold">1</div>
+            <h3 className="font-medium text-zinc-900 dark:text-white mb-1">Deploy Contract</h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">Deploy your Soroban contract to testnet or mainnet</p>
+          </div>
+          <div className="text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-bold">2</div>
+            <h3 className="font-medium text-zinc-900 dark:text-white mb-1">Generate Code</h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">Enter your Contract ID and get a 6-digit code</p>
+          </div>
+          <div className="text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-bold">3</div>
+            <h3 className="font-medium text-zinc-900 dark:text-white mb-1">Run CLI</h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">Execute the CLI in your contract directory</p>
+          </div>
+          <div className="text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-bold">4</div>
+            <h3 className="font-medium text-zinc-900 dark:text-white mb-1">Get Verified</h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">Receive your verified badge on Argus</p>
+          </div>
+        </div>
+      </div>
+
+      {/* What Gets Checked */}
+      <div className="mt-8 rounded-2xl bg-white dark:bg-zinc-900 p-8 ring-1 ring-zinc-900/10 dark:ring-white/10">
+        <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-6">
+          What Gets Verified
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 mt-1">
+              <svg className="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-medium text-zinc-900 dark:text-white">WASM Match</h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">Verifies your local WASM matches the deployed contract</p>
             </div>
           </div>
-
-          <Button
-            onClick={handleGenerateCode}
-            disabled={!contractId.trim() || loading}
-            className="w-full justify-center"
-          >
-            {loading ? 'Generating...' : 'Generate Verification Code'}
-          </Button>
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 mt-1">
+              <svg className="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-medium text-zinc-900 dark:text-white">Public Source</h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">Checks if source code is publicly accessible on GitHub</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 mt-1">
+              <svg className="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-medium text-zinc-900 dark:text-white">Build Environment</h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">Records Rust and Soroban CLI versions used</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 mt-1">
+              <svg className="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-medium text-zinc-900 dark:text-white">Source Files</h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">Counts and hashes all .rs source files</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

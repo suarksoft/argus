@@ -12,6 +12,17 @@ interface RiskAnalysisCardProps {
   aiExplanation: string;
   threats: Threat[];
   isAnalyzing?: boolean;
+  address?: string;
+  communityInfo?: {
+    reportCount?: number;
+    verifiedReportCount?: number;
+    latestReports?: Array<{
+      title: string;
+      scamType: string;
+      status: string;
+      upvotes: number;
+    }>;
+  };
 }
 
 const riskColors = {
@@ -86,6 +97,8 @@ export function RiskAnalysisCard({
   aiExplanation,
   threats,
   isAnalyzing = false,
+  address,
+  communityInfo,
 }: RiskAnalysisCardProps) {
   const colors = riskColors[riskLevel];
 
@@ -183,6 +196,53 @@ export function RiskAnalysisCard({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Community Reports Section (GERÇEK VERİ) */}
+      {communityInfo && communityInfo.reportCount > 0 && (
+        <div className="rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-500/30 p-4">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div className="flex-1">
+              <h5 className="font-semibold text-rose-900 dark:text-rose-100 mb-1">
+                Community Reports Found
+              </h5>
+              <p className="text-sm text-rose-800 dark:text-rose-200 mb-2">
+                {communityInfo.verifiedReportCount > 0 
+                  ? `${communityInfo.verifiedReportCount} verified report(s) from the Argus community`
+                  : `${communityInfo.reportCount} report(s) under review`
+                }
+              </p>
+              {communityInfo.latestReports && communityInfo.latestReports.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  {communityInfo.latestReports.slice(0, 2).map((report, idx) => (
+                    <div key={idx} className="text-xs text-rose-700 dark:text-rose-300 bg-white dark:bg-rose-900/30 rounded px-2 py-1">
+                      <span className="font-medium">"{report.title}"</span>
+                      {report.status === 'verified' && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded text-xs font-semibold">
+                          ✓ Verified
+                        </span>
+                      )}
+                      {report.upvotes > 0 && (
+                        <span className="ml-2 text-rose-600 dark:text-rose-400">
+                          ↑ {report.upvotes}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <a 
+                href={`/community/threats?address=${encodeURIComponent(address || '')}`}
+                className="text-xs text-rose-700 dark:text-rose-300 hover:underline mt-2 inline-block"
+              >
+                View all reports →
+              </a>
+            </div>
+          </div>
         </div>
       )}
 
