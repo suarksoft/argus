@@ -9,6 +9,7 @@ interface ComprehensiveData {
   trades: any[];
   effects: any[];
   accountAge: number;
+  createdAt: string;
   metrics: {
     totalTransactions: number;
     totalPayments: number;
