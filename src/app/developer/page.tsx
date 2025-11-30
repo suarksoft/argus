@@ -141,6 +141,7 @@ export default function DeveloperPage() {
       });
 
       const data = await response.json();
+      console.log('📥 API Response:', data);
 
       if (data.success) {
         setVerificationRequest({
