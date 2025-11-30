@@ -27,6 +27,11 @@ interface AddressAnalysis {
   }>;
   recommendations: string[];
   metadata: any;
+  communityInfo?: {
+    reportCount: number;
+    verifiedReports: number;
+    lastReported?: string;
+  };
 }
 
 export const SendAssetModal: React.FC<SendAssetModalProps> = ({
