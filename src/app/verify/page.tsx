@@ -24,6 +24,7 @@ export default function VerifyPage() {
   const [verificationRequest, setVerificationRequest] = useState<VerificationRequest | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<Step>('contract');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Wallet connection
   const { isConnected, wallet, isConnecting, connect, disconnect, error: walletError } = useWalletConnect();
@@ -100,6 +101,7 @@ export default function VerifyPage() {
           expiresAt: data.expiresAt,
           paymentTxHash: paymentTxHash,
         });
+        setShowSuccessModal(true); // Show popup modal
         console.log('✅ Verification code generated:', data.code);
       } else {
         console.error('❌ Verification failed:', data.error);
@@ -118,20 +120,29 @@ export default function VerifyPage() {
   }, [wallet, paymentTxHash, contractId, githubRepo, network, setError, setLoading, setVerificationRequest]);
 
   // Update step based on state
+  // Note: We don't auto-advance from 'contract' to 'wallet' - user must click button
+  // This ensures both contract ID and GitHub repo are entered before proceeding
   useEffect(() => {
     if (verificationRequest) {
       setCurrentStep('code');
-    } else if (isPaid && paymentTxHash) {
-      // Ready to generate code
-    } else if (isConnected && wallet && currentStep !== 'contract') {
-      // Only auto-advance to payment if we're not on contract step
-      // This prevents auto-advancing when user is still entering contract details
-      if (currentStep === 'wallet') {
-        setCurrentStep('payment');
-      }
+      return;
     }
-    // Don't auto-advance from contract to wallet - user must click button
-    // This ensures GitHub repo can be entered before moving to wallet step
+    
+    // Only auto-advance if we're already past the contract step
+    // This prevents GitHub repo input from disappearing
+    if (currentStep === 'contract') {
+      return; // Stay on contract step until user clicks button
+    }
+    
+    if (isPaid && paymentTxHash) {
+      // Ready to generate code - but don't auto-advance, let useEffect handle it
+      return;
+    }
+    
+    if (isConnected && wallet && currentStep === 'wallet') {
+      // Auto-advance from wallet to payment when wallet connects
+      setCurrentStep('payment');
+    }
   }, [isConnected, wallet, isPaid, paymentTxHash, verificationRequest, currentStep]);
 
   // Auto-verify payment after successful payment (ONCE)
@@ -246,6 +257,7 @@ export default function VerifyPage() {
 
   const handleReset = () => {
     setVerificationRequest(null);
+    setShowSuccessModal(false);
     setContractId('');
     setGithubRepo('');
     setError(null);
@@ -253,75 +265,13 @@ export default function VerifyPage() {
     setCurrentStep('contract');
   };
 
-  // Show verification code result
-  if (verificationRequest) {
-    return (
-      <div className="mx-auto max-w-2xl">
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 p-8 ring-1 ring-zinc-900/10 dark:ring-white/10">
-          <div className="mb-6 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-900/50">
-              <svg className="h-8 w-8 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-zinc-900 dark:text-white">
-              Payment Confirmed - Code Generated
-            </h3>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Contract ID: {verificationRequest.contractId.slice(0, 12)}...
-            </p>
-          </div>
+  const handleCloseModal = () => {
+    setShowSuccessModal(false);
+  };
 
-          <div className="mb-8 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-500/30 p-6 text-center">
-            <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">Your Verification Code</div>
-            <div className="text-5xl font-mono font-bold text-emerald-600 dark:text-emerald-400 tracking-[0.5em]">
-              {verificationRequest.code}
-            </div>
-            <div className="text-sm text-zinc-500 mt-2">Expires in 24 hours</div>
-          </div>
-
-          <div className="mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30">
-            <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">Next Steps:</h4>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-amber-800 dark:text-amber-200">
-              <li>Create a file named <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded">STELLARSENTINEL.md</code> in your GitHub repo root</li>
-              <li>Add this code to the file: <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded font-mono">{verificationRequest.code}</code></li>
-              <li>Commit and push to your repository</li>
-              <li>Run: <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded font-mono">npx argus-stellar-cli verify {verificationRequest.code}</code></li>
-            </ol>
-          </div>
-
-          {verificationRequest.paymentTxHash && (
-            <div className="mb-6 p-4 rounded-lg bg-zinc-100 dark:bg-zinc-800">
-              <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Payment Transaction</div>
-              <a 
-                href={`https://stellar.expert/explorer/${network}/tx/${verificationRequest.paymentTxHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline font-mono"
-              >
-                {verificationRequest.paymentTxHash.slice(0, 16)}...
-              </a>
-            </div>
-          )}
-
-          <div className="space-y-4 mb-6">
-            <div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">Run this command in your contract directory:</p>
-              <div className="rounded-lg bg-zinc-900 p-4">
-                <code className="text-sm text-emerald-400">
-                  npx argus-stellar-cli verify {verificationRequest.code}
-                </code>
-              </div>
-            </div>
-          </div>
-
-          <Button onClick={handleReset} className="w-full">
-            Verify Another Contract
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
 
   const steps = [
     { key: 'contract', label: 'Enter Contract', number: 1 },
@@ -341,6 +291,134 @@ export default function VerifyPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
+      {/* Success Modal Popup */}
+      {showSuccessModal && verificationRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={handleCloseModal}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 p-8 shadow-2xl ring-1 ring-zinc-900/10 dark:ring-white/10 transform transition-all">
+            {/* Close Button */}
+            <button
+              onClick={handleCloseModal}
+              className="absolute right-4 top-4 p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Success Header */}
+            <div className="mb-6 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 animate-bounce">
+                <svg className="h-8 w-8 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-zinc-900 dark:text-white">
+                🎉 Ödeme Başarılı!
+              </h3>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                Doğrulama kodunuz oluşturuldu
+              </p>
+            </div>
+
+            {/* Verification Code */}
+            <div className="mb-6 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-2 border-emerald-300 dark:border-emerald-500/50 p-6 text-center">
+              <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">Doğrulama Kodunuz</div>
+              <div className="text-4xl font-mono font-bold text-emerald-600 dark:text-emerald-400 tracking-[0.3em] mb-2">
+                {verificationRequest.code}
+              </div>
+              <button
+                onClick={() => copyToClipboard(verificationRequest.code)}
+                className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+              >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Kopyala
+              </button>
+              <div className="text-xs text-zinc-500 mt-2">24 saat içinde geçerli</div>
+            </div>
+
+            {/* CLI Command */}
+            <div className="mb-6">
+              <div className="text-sm font-medium text-zinc-900 dark:text-white mb-2">
+                CLI Komutu:
+              </div>
+              <div className="relative rounded-lg bg-zinc-950 p-4 font-mono text-sm">
+                <code className="text-emerald-400 break-all">
+                  npx argus-stellar-cli verify {verificationRequest.code} --api-url https://argus-alpha-two.vercel.app
+                </code>
+                <button
+                  onClick={() => copyToClipboard(`npx argus-stellar-cli verify ${verificationRequest.code} --api-url https://argus-alpha-two.vercel.app`)}
+                  className="absolute right-2 top-2 p-2 text-zinc-400 hover:text-white transition-colors"
+                  title="Kopyala"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Steps */}
+            <div className="mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30">
+              <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-3 flex items-center gap-2">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Sonraki Adımlar:
+              </h4>
+              <ol className="list-decimal list-inside space-y-2 text-sm text-amber-800 dark:text-amber-200">
+                <li>GitHub repo'nuzun kök dizininde <code className="bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded font-mono text-xs">STELLARSENTINEL.md</code> dosyası oluşturun</li>
+                <li>Bu kodu dosyaya ekleyin: <code className="bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded font-mono text-xs">{verificationRequest.code}</code></li>
+                <li>Commit yapın ve push'layın</li>
+                <li>Yukarıdaki CLI komutunu çalıştırın</li>
+              </ol>
+            </div>
+
+            {/* Transaction Link */}
+            {verificationRequest.paymentTxHash && (
+              <div className="mb-6 text-center">
+                <a 
+                  href={`https://stellar.expert/explorer/${verificationRequest.network}/tx/${verificationRequest.paymentTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  İşlemi Stellar Expert'te görüntüle
+                </a>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button
+                onClick={handleCloseModal}
+                variant="secondary"
+                className="flex-1 justify-center"
+              >
+                Kapat
+              </Button>
+              <Button
+                onClick={handleReset}
+                className="flex-1 justify-center"
+              >
+                Yeni Doğrulama
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-12 text-center">
         <div className="mx-auto mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-900/50">
           <svg className="h-8 w-8 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -655,7 +733,7 @@ export default function VerifyPage() {
               Once you receive your verification code, run the CLI in your contract directory:
             </p>
             <div className="rounded-lg bg-zinc-950 p-4 font-mono text-sm">
-              <code className="text-emerald-400">npx argus-stellar-cli verify YOUR_CODE</code>
+              <code className="text-emerald-400">npx argus-stellar-cli verify YOUR_CODE --api-url https://argus-alpha-two.vercel.app</code>
             </div>
             <a
               href="https://www.npmjs.com/package/argus-stellar-cli"

@@ -1,7 +1,7 @@
 import { collectAllData, getStellarExpertData } from './data-collector';
 import { generateAIExplanation, generateRecommendations } from './ai';
 import { getCollection } from './mongodb';
-import { FraudDetector, calculateAdvancedRiskScore } from './fraud-detector';
+import { FraudDetector, calculateAdvancedRiskScore, detectConnectedScamAddresses, ConnectedScamResult } from './fraud-detector';
 
 interface ComprehensiveAnalysis {
   riskScore: number;
@@ -13,6 +13,7 @@ interface ComprehensiveAnalysis {
   activityInfo: any;
   securityInfo: any;
   communityInfo: any;
+  scamConnections?: ConnectedScamResult;
   rawData?: any;
 }
 
@@ -156,6 +157,8 @@ export async function analyzeAddressComprehensive(
 
     // 5. DATABASE CHECKS
     let communityReports: any[] = [];
+    let scamConnections: ConnectedScamResult | undefined;
+    
     try {
       // Blacklist check
       const blacklistCollection = await getCollection('blacklist');
@@ -204,6 +207,41 @@ export async function analyzeAddressComprehensive(
           })),
         });
         riskScore += impact;
+      }
+
+      // 6. SCAM CONNECTION DETECTION - Check if this address interacted with known scammers
+      console.log('🔗 Checking scam connections...');
+      scamConnections = await detectConnectedScamAddresses(
+        allData.payments,
+        address,
+        blacklistCollection,
+        reportsCollection
+      );
+
+      if (scamConnections.hasScamConnections) {
+        const connectionSeverity = scamConnections.riskLevel === 'CRITICAL' ? 'CRITICAL' 
+          : scamConnections.riskLevel === 'HIGH' ? 'HIGH' : 'MEDIUM';
+        const connectionImpact = scamConnections.riskLevel === 'CRITICAL' ? 40 
+          : scamConnections.riskLevel === 'HIGH' ? 25 : 15;
+
+        threats.push({
+          name: 'SCAM_CONNECTIONS',
+          severity: connectionSeverity,
+          description: `Bu cüzdan ${scamConnections.scamConnectionCount} bilinen scam adresiyle etkileşimde bulunmuş`,
+          impact: connectionImpact,
+          indicators: scamConnections.connections.map(c => ({
+            address: c.scamAddress.slice(0, 12) + '...',
+            type: c.scamType,
+            reason: c.scamReason,
+            interaction: c.interactionType === 'sent_to' ? 'Para göndermiş' 
+              : c.interactionType === 'received_from' ? 'Para almış' : 'İki yönlü',
+            txCount: c.transactionCount,
+            amount: c.totalAmount.toFixed(2) + ' XLM',
+          })),
+        });
+        riskScore += connectionImpact;
+
+        console.log('⚠️ Scam connections found:', scamConnections.scamConnectionCount);
       }
     } catch (dbError) {
       console.log('Database checks skipped:', dbError);
@@ -331,6 +369,9 @@ export async function analyzeAddressComprehensive(
         entityCategory: expertData?.category,
         tags: expertData?.tags || [],
       },
+
+      // Scam bağlantıları (KRİTİK GÜVENLİK)
+      scamConnections,
       
       // Ham data (debugging için)
       rawData: process.env.NODE_ENV === 'development' ? {

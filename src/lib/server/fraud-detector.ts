@@ -497,3 +497,157 @@ export function calculateAdvancedRiskScore(data: any, fraudResult: any): number 
   return score;
 }
 
+/**
+ * CONNECTED SCAM ADDRESS DETECTION
+ * 
+ * Kullanıcının scam adreslerle olan bağlantılarını tespit eder
+ */
+export interface ConnectedScamResult {
+  hasScamConnections: boolean;
+  scamConnectionCount: number;
+  riskLevel: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  connections: Array<{
+    scamAddress: string;
+    scamType: string;
+    scamReason: string;
+    interactionType: 'sent_to' | 'received_from' | 'both';
+    transactionCount: number;
+    totalAmount: number;
+    lastInteraction: string;
+  }>;
+  recommendations: string[];
+}
+
+export async function detectConnectedScamAddresses(
+  payments: any[],
+  targetAddress: string,
+  blacklistCollection: any,
+  reportsCollection: any
+): Promise<ConnectedScamResult> {
+  const connections: ConnectedScamResult['connections'] = [];
+  
+  // 1. Gather all unique addresses this account interacted with
+  const interactedAddresses = new Map<string, {
+    sentTo: number;
+    receivedFrom: number;
+    totalSent: number;
+    totalReceived: number;
+    lastInteraction: string;
+  }>();
+
+  for (const payment of payments) {
+    const otherAddress = payment.from === targetAddress ? payment.to : payment.from;
+    const isSent = payment.from === targetAddress;
+    const amount = parseFloat(payment.amount || '0');
+    
+    if (!interactedAddresses.has(otherAddress)) {
+      interactedAddresses.set(otherAddress, {
+        sentTo: 0,
+        receivedFrom: 0,
+        totalSent: 0,
+        totalReceived: 0,
+        lastInteraction: payment.created_at,
+      });
+    }
+    
+    const stats = interactedAddresses.get(otherAddress)!;
+    if (isSent) {
+      stats.sentTo++;
+      stats.totalSent += amount;
+    } else {
+      stats.receivedFrom++;
+      stats.totalReceived += amount;
+    }
+    
+    if (new Date(payment.created_at) > new Date(stats.lastInteraction)) {
+      stats.lastInteraction = payment.created_at;
+    }
+  }
+
+  // 2. Check each address against blacklist and scam reports
+  const addressList = Array.from(interactedAddresses.keys());
+  
+  if (addressList.length > 0) {
+    try {
+      // Check blacklist
+      const blacklistedAddresses = await blacklistCollection.find({
+        address: { $in: addressList },
+        isActive: true,
+      }).toArray();
+
+      for (const blacklisted of blacklistedAddresses) {
+        const stats = interactedAddresses.get(blacklisted.address)!;
+        connections.push({
+          scamAddress: blacklisted.address,
+          scamType: blacklisted.scamType || 'BLACKLISTED',
+          scamReason: blacklisted.reason || 'Known scam address',
+          interactionType: stats.sentTo > 0 && stats.receivedFrom > 0 
+            ? 'both' 
+            : stats.sentTo > 0 ? 'sent_to' : 'received_from',
+          transactionCount: stats.sentTo + stats.receivedFrom,
+          totalAmount: stats.totalSent + stats.totalReceived,
+          lastInteraction: stats.lastInteraction,
+        });
+      }
+
+      // Check scam reports (verified ones)
+      const reportedAddresses = await reportsCollection.find({
+        address: { $in: addressList },
+        status: 'verified',
+      }).toArray();
+
+      for (const reported of reportedAddresses) {
+        // Skip if already in blacklist
+        if (connections.some(c => c.scamAddress === reported.address)) continue;
+        
+        const stats = interactedAddresses.get(reported.address)!;
+        connections.push({
+          scamAddress: reported.address,
+          scamType: reported.scamType || 'REPORTED',
+          scamReason: reported.title || 'Community reported scam',
+          interactionType: stats.sentTo > 0 && stats.receivedFrom > 0 
+            ? 'both' 
+            : stats.sentTo > 0 ? 'sent_to' : 'received_from',
+          transactionCount: stats.sentTo + stats.receivedFrom,
+          totalAmount: stats.totalSent + stats.totalReceived,
+          lastInteraction: stats.lastInteraction,
+        });
+      }
+    } catch (error) {
+      console.error('Error checking scam connections:', error);
+    }
+  }
+
+  // 3. Calculate risk level
+  let riskLevel: ConnectedScamResult['riskLevel'] = 'NONE';
+  const recommendations: string[] = [];
+
+  if (connections.length === 0) {
+    riskLevel = 'NONE';
+    recommendations.push('No scam connections detected - keep up good security practices');
+  } else if (connections.length === 1) {
+    riskLevel = connections[0].interactionType === 'sent_to' ? 'HIGH' : 'MEDIUM';
+    recommendations.push('Consider reviewing your transaction history');
+    if (connections[0].interactionType === 'sent_to') {
+      recommendations.push('You may have been a victim of a scam - be extra cautious');
+    }
+  } else if (connections.length <= 3) {
+    riskLevel = 'HIGH';
+    recommendations.push('Multiple scam connections detected - review all recent transactions');
+    recommendations.push('Consider creating a new wallet for future transactions');
+  } else {
+    riskLevel = 'CRITICAL';
+    recommendations.push('CRITICAL: Many scam connections detected');
+    recommendations.push('This wallet may be compromised or associated with scam activity');
+    recommendations.push('Strongly recommend moving funds to a new secure wallet');
+  }
+
+  return {
+    hasScamConnections: connections.length > 0,
+    scamConnectionCount: connections.length,
+    riskLevel,
+    connections,
+    recommendations,
+  };
+}
+
