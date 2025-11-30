@@ -39,32 +39,55 @@ export async function GET(request: NextRequest) {
         sortOptions.createdAt = -1;
       }
 
-      // Fetch threats
+      // Fetch threats (GERÇEK VERİ - MongoDB'den)
       const threats = await reportsCollection
         .find(query)
         .sort(sortOptions)
         .limit(50)
         .toArray();
 
-      console.log('✅ Found', threats.length, 'threats');
+      console.log('✅ Found', threats.length, 'threats from MongoDB');
+      console.log('Sample threat:', threats[0] ? JSON.stringify(threats[0], null, 2) : 'No threats');
 
-      // Calculate severity (if not stored)
-      const enrichedThreats = threats.map(threat => {
-        // Auto-calculate severity if not set
-        let severity = threat.severity || 'MEDIUM';
+      // Map MongoDB documents to frontend format (GERÇEK VERİ)
+      const enrichedThreats = threats.map((threat: any) => {
+        // Severity calculation based on real data
+        let severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'MEDIUM';
         
-        if (threat.upvotes > 20 || threat.scamType === 'HONEYPOT') {
-          severity = 'CRITICAL';
-        } else if (threat.upvotes > 10 || ['PHISHING', 'FAKE_EXCHANGE'].includes(threat.scamType)) {
-          severity = 'HIGH';
-        } else if (threat.upvotes > 5) {
-          severity = 'MEDIUM';
+        // Use stored severity if exists, otherwise calculate
+        if (threat.severity) {
+          severity = threat.severity;
+        } else {
+          // Calculate based on real data
+          const upvotes = threat.upvotes || 0;
+          const scamType = threat.scamType || '';
+          
+          if (upvotes > 20 || scamType === 'HONEYPOT' || threat.status === 'verified') {
+            severity = 'CRITICAL';
+          } else if (upvotes > 10 || ['PHISHING', 'FAKE_EXCHANGE', 'RUG_PULL'].includes(scamType)) {
+            severity = 'HIGH';
+          } else if (upvotes > 5) {
+            severity = 'MEDIUM';
+          } else {
+            severity = 'LOW';
+          }
         }
 
+        // Return REAL data from MongoDB
         return {
-          ...threat,
           _id: threat._id.toString(),
+          address: threat.address || '',
+          scamType: threat.scamType || 'OTHER',
+          title: threat.title || 'Untitled Report',
+          description: threat.description || '',
           severity,
+          status: threat.status || 'pending',
+          reporterUsername: threat.reporterUsername || threat.reporterEmail?.split('@')[0] || 'Anonymous',
+          upvotes: threat.upvotes || 0,
+          downvotes: threat.downvotes || 0,
+          evidenceUrls: threat.evidenceUrls || [],
+          createdAt: threat.createdAt ? new Date(threat.createdAt).toISOString() : new Date().toISOString(),
+          verifiedAt: threat.verifiedAt ? new Date(threat.verifiedAt).toISOString() : undefined,
         };
       });
 

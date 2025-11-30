@@ -238,7 +238,6 @@ export const navigation: Array<NavGroup> = [
     links: [
       { title: 'Introduction', href: '/' },
       { title: 'Defense Wallet', href: '/defense-wallet' },
-    
       { title: 'Developer', href: '/developer' },
     ],
   },
@@ -249,6 +248,20 @@ export const navigation: Array<NavGroup> = [
       { title: 'Threat Database', href: '/community/threats' },
       { title: 'Report Threat', href: '/community/report' },
       { title: 'Leaderboard', href: '/community/leaderboard' },
+    ],
+  },
+  {
+    title: 'Verification',
+    links: [
+      { title: 'Verify Contract', href: '/verify' },
+      { title: 'Verified Contracts', href: '/contracts' },
+    ],
+  },
+  {
+    title: 'dApp Directory',
+    links: [
+      { title: 'Browse dApps', href: '/dapps' },
+      { title: 'Submit dApp', href: '/dapps/submit' },
     ],
   },
 ]

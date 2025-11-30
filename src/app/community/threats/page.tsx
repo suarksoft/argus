@@ -58,6 +58,7 @@ export default function ThreatsPage() {
 
   const fetchThreats = async () => {
     try {
+      setLoading(true);
       const params = new URLSearchParams({
         filter,
         sort: sortBy,
@@ -65,14 +66,28 @@ export default function ThreatsPage() {
       if (addressFilter) {
         params.append('address', addressFilter);
       }
-      const response = await fetch(`/api/community/threats?${params.toString()}`);
-      const data = await response.json();
       
-      if (data.success) {
-        setThreats(data.threats || []);
+      console.log('Fetching threats from API...');
+      const response = await fetch(`/api/community/threats?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API Response:', data);
+      
+      if (data.success && Array.isArray(data.threats)) {
+        // GERÇEK VERİ - MongoDB'den gelen veriler
+        setThreats(data.threats);
+        console.log(`✅ Loaded ${data.threats.length} real threats from database`);
+      } else {
+        console.warn('API returned invalid data:', data);
+        setThreats([]); // Boş array - mock data YOK
       }
     } catch (error) {
       console.error('Failed to fetch threats:', error);
+      setThreats([]); // Hata durumunda boş - mock data YOK
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/server/mongodb';
+import { fetchStellarSentinelFile, extractVerificationCode } from '@/lib/server/github';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,6 +8,37 @@ interface VerificationCheck {
   name: string;
   passed: boolean;
   message: string;
+}
+
+// Calculate security score based on checks and payload
+function calculateSecurityScore(checks: VerificationCheck[], payload: any): number {
+  let score = 100;
+
+  // Critical checks: -30 each if failed
+  const criticalChecks = ['WASM_MATCH', 'PUBLIC_SOURCE', 'SOURCE_FILES', 'BUILD_ENV'];
+  criticalChecks.forEach(checkName => {
+    const check = checks.find(c => c.name === checkName);
+    if (check && !check.passed) {
+      score -= 30;
+    }
+  });
+
+  // WASM size check: -10 if suspicious
+  const sizeCheck = checks.find(c => c.name === 'WASM_SIZE');
+  if (sizeCheck && !sizeCheck.passed) {
+    score -= 10;
+  }
+
+  // Additional factors
+  if (!payload.gitRemote || !payload.gitRemote.includes('github.com')) {
+    score -= 5; // No public repo
+  }
+
+  if (!payload.gitCommit) {
+    score -= 5; // No commit hash
+  }
+
+  return Math.max(0, Math.min(100, score));
 }
 
 function runVerificationChecks(payload: any): VerificationCheck[] {
@@ -115,6 +147,30 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Check GitHub STELLARSENTINEL.md file
+      if (verificationRequest.githubRepo) {
+        console.log('Checking GitHub repo:', verificationRequest.githubRepo);
+        const sentinelFile = await fetchStellarSentinelFile(verificationRequest.githubRepo);
+        
+        if (!sentinelFile) {
+          return NextResponse.json(
+            { success: false, error: 'STELLARSENTINEL.md file not found in GitHub repository. Please add the file with your verification code.' },
+            { status: 400 }
+          );
+        }
+
+        // Extract code from file
+        const fileCode = extractVerificationCode(sentinelFile.content);
+        if (!fileCode || fileCode !== code) {
+          return NextResponse.json(
+            { success: false, error: `Verification code mismatch. Found "${fileCode}" in STELLARSENTINEL.md, expected "${code}".` },
+            { status: 400 }
+          );
+        }
+
+        console.log('✅ GitHub verification code matches');
+      }
+
       // Run verification checks
       const checks = runVerificationChecks(payload);
       
@@ -126,9 +182,19 @@ export async function POST(request: NextRequest) {
       console.log('Verification result:', verified ? 'PASSED' : 'FAILED');
       console.log('Checks:', checks.map(c => `${c.name}: ${c.passed ? 'PASS' : 'FAIL'}`));
 
-      // Save to contracts collection
-      const contractsCollection = await getCollection('contracts');
-      await contractsCollection.updateOne(
+      // Calculate security score (0-100)
+      const securityScore = calculateSecurityScore(checks, payload);
+
+      // Determine risk level
+      let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'LOW';
+      if (securityScore >= 90) riskLevel = 'LOW';
+      else if (securityScore >= 70) riskLevel = 'MEDIUM';
+      else if (securityScore >= 50) riskLevel = 'HIGH';
+      else riskLevel = 'CRITICAL';
+
+      // Save to verified_contracts collection
+      const verifiedContractsCollection = await getCollection('verified_contracts');
+      await verifiedContractsCollection.updateOne(
         { 
           contractId: verificationRequest.contractId,
           network: verificationRequest.network 
@@ -137,22 +203,27 @@ export async function POST(request: NextRequest) {
           $set: {
             contractId: verificationRequest.contractId,
             network: verificationRequest.network,
-            isVerified: verified,
+            dappId: null, // Can be linked later
+            name: payload.contractName,
+            description: payload.description || '',
+            githubRepo: verificationRequest.githubRepo || payload.gitRemote,
+            githubCommit: payload.gitCommit,
+            compilerVersion: `${payload.rustVersion} / ${payload.sorobanVersion}`,
+            securityScore,
+            riskLevel,
+            verifiedBy: 'cli-tool',
+            isAudited: false,
+            auditUrl: null,
+            viewCount: 0,
+            trustCount: 0,
             wasmHash: payload.wasmHash,
             wasmSize: payload.wasmSize,
             sourceHash: payload.sourceHash,
             sourceFiles: payload.sourceFiles,
-            gitCommit: payload.gitCommit,
-            gitBranch: payload.gitBranch,
-            gitRemote: payload.gitRemote,
-            rustVersion: payload.rustVersion,
-            sorobanVersion: payload.sorobanVersion,
-            name: payload.contractName,
             verificationChecks: Object.fromEntries(
               checks.map(c => [c.name, c.passed])
             ),
             verifiedAt: new Date(),
-            verifiedBy: 'cli-tool',
             updatedAt: new Date(),
           },
           $setOnInsert: {

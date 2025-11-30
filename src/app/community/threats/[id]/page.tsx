@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -60,104 +60,26 @@ interface ThreatDetail {
   comments: Comment[];
 }
 
-// Mock data
-const mockThreat: ThreatDetail = {
-  id: '1',
-  type: 'PHISHING',
-  severity: 'CRITICAL',
-  status: 'VERIFIED',
-  title: 'Phishing Site - stellar-airdrop-free.com',
-  description: `This is a sophisticated phishing website that impersonates the official Stellar airdrop page. The site uses a similar domain name and copies the exact design of legitimate Stellar websites.
-
-**How the scam works:**
-1. Users are directed to the site through social media ads or spam messages
-2. The site asks users to "connect their wallet" to claim free XLM
-3. Instead of a legitimate connection, the site captures wallet credentials
-4. Attackers then drain the victim's wallet
-
-**Red flags identified:**
-- Domain registered 3 days ago
-- No SSL certificate verification
-- Requests seed phrase (legitimate sites never do this)
-- Multiple user reports of stolen funds
-
-**Recommended action:**
-- Do NOT visit this website
-- Report any links to this site on social media
-- If you've entered credentials, transfer funds immediately to a new wallet`,
-  targetWebsite: 'stellar-airdrop-free.com',
-  targetAddress: 'GDKX7F2A9K3MLXYZ123456789ABCDEFGHIJKLMNOPQRSTUVWX',
-  votesConfirm: 145,
-  votesReject: 3,
-  reporterAddress: 'GDKX...9F2A',
-  reporterUsername: 'StellarGuard',
-  reporterReputation: 2450,
-  createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-  updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  verifiedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  verifiedBy: 'Argus Team',
-  estimatedLoss: 45000,
-  viewCount: 1234,
-  shareCount: 89,
-  evidenceUrls: [
-    'https://twitter.com/user/status/123456789',
-    'https://reddit.com/r/stellar/comments/abc123',
-  ],
-  evidenceFiles: [
-    'screenshot1.png',
-    'screenshot2.png',
-  ],
-  relatedAddresses: [
-    'GBXY...4K3M',
-    'GC8Z...7K2L',
-    'GD9A...8M4N',
-  ],
-  votes: [
-    {
-      id: 'v1',
-      voterAddress: 'GB2Y...4K3L',
-      voterUsername: 'CryptoWatcher',
-      voteType: 'CONFIRM',
-      comment: 'I was almost a victim of this. Confirmed phishing site.',
-      voterReputation: 1890,
-      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: 'v2',
-      voterAddress: 'GC7X...4M2N',
-      voterUsername: 'SafetyFirst',
-      voteType: 'CONFIRM',
-      comment: 'Domain WHOIS shows it was registered 3 days ago in Russia.',
-      voterReputation: 1234,
-      createdAt: new Date(Date.now() - 1.5 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: 'v3',
-      voterAddress: 'GD8Y...G7H8',
-      voteType: 'CONFIRM',
-      voterReputation: 567,
-      createdAt: new Date(Date.now() - 1.8 * 24 * 60 * 60 * 1000),
-    },
-  ],
-  comments: [
-    {
-      id: 'c1',
-      authorAddress: 'ARGUS_TEAM',
-      authorUsername: 'Argus Team',
-      content: 'This threat has been verified by our team. We have notified domain registrars and browser security teams.',
-      isOfficial: true,
-      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: 'c2',
-      authorAddress: 'GB2Y...4K3L',
-      authorUsername: 'CryptoWatcher',
-      content: 'I traced the funds and they went through a mixer. Total stolen so far is around $45,000.',
-      isOfficial: false,
-      createdAt: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000),
-    },
-  ],
-};
+// Interface for API response
+interface ThreatApiResponse {
+  _id: string;
+  address: string;
+  scamType: string;
+  title: string;
+  description: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  status: 'pending' | 'verified' | 'rejected';
+  reporterUsername: string;
+  reporterEmail?: string;
+  upvotes: number;
+  downvotes: number;
+  evidenceUrls: string[];
+  createdAt: string;
+  updatedAt: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  contactEmail?: string;
+}
 
 // Utility functions
 const formatDate = (date: Date): string => {
@@ -236,9 +158,102 @@ export default function ThreatDetailPage() {
   const [voteComment, setVoteComment] = useState('');
   const [newComment, setNewComment] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'votes' | 'comments'>('details');
+  const [threat, setThreat] = useState<ThreatDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // In real app, fetch threat by ID
-  const threat = mockThreat;
+  // Fetch threat from API (GERÇEK VERİ)
+  useEffect(() => {
+    const fetchThreat = async () => {
+      try {
+        setLoading(true);
+        const id = params.id as string;
+        
+        console.log('Fetching threat:', id);
+        const response = await fetch(`/api/community/threats/${id}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('API Response:', data);
+        
+        if (data.success && data.threat) {
+          // Map API response to ThreatDetail format (GERÇEK VERİ)
+          const apiThreat: ThreatApiResponse = data.threat;
+          
+          const mappedThreat: ThreatDetail = {
+            id: apiThreat._id,
+            type: (apiThreat.scamType as ThreatType) || 'OTHER',
+            severity: apiThreat.severity || 'MEDIUM',
+            status: apiThreat.status === 'verified' ? 'VERIFIED' : apiThreat.status === 'rejected' ? 'REJECTED' : 'PENDING',
+            title: apiThreat.title,
+            description: apiThreat.description,
+            targetAddress: apiThreat.address,
+            votesConfirm: apiThreat.upvotes || 0,
+            votesReject: apiThreat.downvotes || 0,
+            reporterAddress: apiThreat.address,
+            reporterUsername: apiThreat.reporterUsername,
+            reporterReputation: 0, // TODO: Get from user profile
+            createdAt: new Date(apiThreat.createdAt),
+            updatedAt: new Date(apiThreat.updatedAt),
+            verifiedAt: apiThreat.verifiedAt ? new Date(apiThreat.verifiedAt) : undefined,
+            verifiedBy: apiThreat.verifiedBy,
+            estimatedLoss: undefined, // Not stored yet
+            viewCount: 0, // TODO: Track views
+            shareCount: 0, // TODO: Track shares
+            evidenceUrls: apiThreat.evidenceUrls || [],
+            evidenceFiles: [], // Not stored separately
+            relatedAddresses: [], // TODO: Find related addresses
+            votes: [], // TODO: Fetch votes separately
+            comments: [], // TODO: Fetch comments separately
+          };
+          
+          setThreat(mappedThreat);
+          console.log('✅ Loaded real threat from database');
+        } else {
+          throw new Error(data.error || 'Failed to load threat');
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch threat:', err);
+        setError(err.message || 'Failed to load threat');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (params.id) {
+      fetchThreat();
+    }
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <svg className="animate-spin h-12 w-12 text-emerald-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-zinc-400">Loading threat details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !threat) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">{error || 'Threat not found'}</p>
+          <Link href="/community/threats" className="text-emerald-400 hover:underline">
+            ← Back to Threats
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleVote = (type: 'CONFIRM' | 'REJECT') => {
     setUserVote(type);

@@ -235,12 +235,14 @@ export function RiskAnalysisCard({
                   ))}
                 </div>
               )}
-              <a 
-                href={`/community/threats?address=${encodeURIComponent(address || '')}`}
-                className="text-xs text-rose-700 dark:text-rose-300 hover:underline mt-2 inline-block"
-              >
-                View all reports →
-              </a>
+              {address && (
+                <a 
+                  href={`/community/threats?address=${encodeURIComponent(address)}`}
+                  className="text-xs text-rose-700 dark:text-rose-300 hover:underline mt-2 inline-block"
+                >
+                  View all reports →
+                </a>
+              )}
             </div>
           </div>
         </div>

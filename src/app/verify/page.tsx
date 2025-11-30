@@ -16,7 +16,7 @@ interface VerificationRequest {
 
 type Step = 'contract' | 'wallet' | 'payment' | 'code';
 
-export default function DeveloperPage() {
+export default function VerifyPage() {
   const [contractId, setContractId] = useState('');
   const [githubRepo, setGithubRepo] = useState('');
   const [network, setNetwork] = useState<'testnet' | 'mainnet'>('testnet');
@@ -152,6 +152,7 @@ export default function DeveloperPage() {
   const handleReset = () => {
     setVerificationRequest(null);
     setContractId('');
+    setGithubRepo('');
     setError(null);
     resetPayment();
     setCurrentStep('contract');
@@ -378,7 +379,7 @@ export default function DeveloperPage() {
 
                 <Button
                   onClick={handleContractSubmit}
-                  disabled={!contractId.trim()}
+                  disabled={!contractId.trim() || !githubRepo.trim()}
                   className="w-full justify-center"
                 >
                   Continue to Wallet Connection
@@ -600,7 +601,7 @@ export default function DeveloperPage() {
                 <svg className="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Public Git repository (recommended)
+                Public GitHub repository
               </li>
             </ul>
           </div>
@@ -616,7 +617,7 @@ export default function DeveloperPage() {
           <div className="text-center">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-bold">1</div>
             <h3 className="font-medium text-zinc-900 dark:text-white mb-1">Enter Contract</h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">Provide your deployed contract ID and network</p>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">Provide your deployed contract ID, GitHub repo, and network</p>
           </div>
           <div className="text-center">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-bold">2</div>
@@ -625,13 +626,13 @@ export default function DeveloperPage() {
           </div>
           <div className="text-center">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-bold">3</div>
-            <h3 className="font-medium text-zinc-900 dark:text-white mb-1">Run CLI</h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">Execute the CLI in your contract directory</p>
+            <h3 className="font-medium text-zinc-900 dark:text-white mb-1">Add Code</h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">Add STELLARSENTINEL.md to your GitHub repo with the code</p>
           </div>
           <div className="text-center">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-bold">4</div>
-            <h3 className="font-medium text-zinc-900 dark:text-white mb-1">Get Verified</h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">Receive your verified badge on Argus</p>
+            <h3 className="font-medium text-zinc-900 dark:text-white mb-1">Run CLI</h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">Execute the CLI to complete verification</p>
           </div>
         </div>
       </div>
