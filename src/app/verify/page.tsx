@@ -123,14 +123,16 @@ export default function VerifyPage() {
       setCurrentStep('code');
     } else if (isPaid && paymentTxHash) {
       // Ready to generate code
-    } else if (isConnected && wallet) {
-      setCurrentStep('payment');
-    } else if (contractId.trim() && contractId.length === 56 && contractId.startsWith('C')) {
-      setCurrentStep('wallet');
-    } else {
-      setCurrentStep('contract');
+    } else if (isConnected && wallet && currentStep !== 'contract') {
+      // Only auto-advance to payment if we're not on contract step
+      // This prevents auto-advancing when user is still entering contract details
+      if (currentStep === 'wallet') {
+        setCurrentStep('payment');
+      }
     }
-  }, [isConnected, wallet, isPaid, paymentTxHash, verificationRequest, contractId]);
+    // Don't auto-advance from contract to wallet - user must click button
+    // This ensures GitHub repo can be entered before moving to wallet step
+  }, [isConnected, wallet, isPaid, paymentTxHash, verificationRequest, currentStep]);
 
   // Auto-verify payment after successful payment (ONCE)
   useEffect(() => {

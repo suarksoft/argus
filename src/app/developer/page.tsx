@@ -26,7 +26,7 @@ export default function DeveloperPage() {
   const [currentStep, setCurrentStep] = useState<Step>('contract');
 
   // Wallet connection
-  const { isConnected, wallet, isConnecting, connect, disconnect, error: walletError } = useWalletConnect();
+  const { isConnected, wallet, isConnecting, connect, disconnect, signTransaction, error: walletError } = useWalletConnect();
 
   // Payment
   const { 
@@ -93,8 +93,8 @@ export default function DeveloperPage() {
     }
 
     try {
-      // Pay verification fee with contract ID for memo - pass wallet publicKey explicitly
-      const paymentResult = await payVerificationFee(network, contractId.trim(), wallet.publicKey);
+      // Pay verification fee with contract ID for memo - pass wallet publicKey and signTransaction explicitly
+      const paymentResult = await payVerificationFee(network, contractId.trim(), wallet.publicKey, signTransaction);
       
       // After successful payment, verify payment and generate code
       if (paymentResult?.success && paymentResult?.txHash) {

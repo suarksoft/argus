@@ -44,10 +44,12 @@ export const useVerificationPayment = () => {
   const payVerificationFee = useCallback(async (
     network: 'testnet' | 'mainnet',
     contractId?: string,
-    walletPublicKey?: string
+    walletPublicKey?: string,
+    signTransactionFn?: (xdr: string) => Promise<string | undefined>
   ) => {
     // Use passed wallet or get from hook
     const publicKey = walletPublicKey || walletConnect.wallet?.publicKey;
+    const signTx = signTransactionFn || walletConnect.signTransaction;
     
     if (!publicKey) {
       console.error('Wallet check failed:', {
@@ -121,8 +123,8 @@ export const useVerificationPayment = () => {
       // Convert to XDR for signing
       const xdr = transaction.toXDR();
 
-      // Sign with wallet (Freighter)
-      const signedXdr = await walletConnect.signTransaction(xdr);
+      // Sign with wallet (Freighter) - use passed function or hook's
+      const signedXdr = await signTx(xdr);
 
       if (!signedXdr) {
         throw new Error('Transaction signing failed or was cancelled');
