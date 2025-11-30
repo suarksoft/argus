@@ -155,6 +155,7 @@ export async function analyzeAddressComprehensive(
     }
 
     // 5. DATABASE CHECKS
+    let communityReports: any[] = [];
     try {
       // Blacklist check
       const blacklistCollection = await getCollection('blacklist');
@@ -175,26 +176,26 @@ export async function analyzeAddressComprehensive(
 
       // Community reports check (GERÇEK VERİ)
       const reportsCollection = await getCollection('scam_reports');
-      const reports = await reportsCollection.find({ 
+      communityReports = await reportsCollection.find({ 
         address,
         status: { $in: ['verified', 'pending'] } // Verified ve pending reportları göster
       }).sort({ createdAt: -1 }).limit(10).toArray();
       
-      if (reports.length > 0) {
-        const verifiedCount = reports.filter(r => r.status === 'verified').length;
-        const totalUpvotes = reports.reduce((sum, r) => sum + (r.upvotes || 0), 0);
+      if (communityReports.length > 0) {
+        const verifiedCount = communityReports.filter(r => r.status === 'verified').length;
+        const totalUpvotes = communityReports.reduce((sum, r) => sum + (r.upvotes || 0), 0);
         const severity = verifiedCount > 0 ? 'CRITICAL' : 'HIGH';
         const impact = verifiedCount > 0 ? 50 : 30;
         
         // En son report detayları
-        const latestReport = reports[0];
+        const latestReport = communityReports[0];
         
         threats.push({
           name: 'COMMUNITY_REPORTS',
           severity,
-          description: `${verifiedCount > 0 ? verifiedCount : reports.length} ${verifiedCount > 0 ? 'doğrulanmış' : 'bekleyen'} community report var. ${totalUpvotes > 0 ? `(${totalUpvotes} upvote)` : ''}${latestReport.title ? ` Son report: "${latestReport.title}"` : ''}`,
+          description: `${verifiedCount > 0 ? verifiedCount : communityReports.length} ${verifiedCount > 0 ? 'doğrulanmış' : 'bekleyen'} community report var. ${totalUpvotes > 0 ? `(${totalUpvotes} upvote)` : ''}${latestReport.title ? ` Son report: "${latestReport.title}"` : ''}`,
           impact,
-          indicators: reports.map((r: any) => ({
+          indicators: communityReports.map((r: any) => ({
             title: r.title,
             scamType: r.scamType,
             status: r.status,
@@ -314,10 +315,10 @@ export async function analyzeAddressComprehensive(
       // Community & Expert bilgileri (GERÇEK VERİ)
       communityInfo: {
         isBlacklisted: threats.some(t => t.name === 'BLACKLISTED'),
-        reportCount: reports.length,
-        verifiedReportCount: reports.filter((r: any) => r.status === 'verified').length,
-        pendingReportCount: reports.filter((r: any) => r.status === 'pending').length,
-        latestReports: reports.slice(0, 3).map((r: any) => ({
+        reportCount: communityReports.length,
+        verifiedReportCount: communityReports.filter((r: any) => r.status === 'verified').length,
+        pendingReportCount: communityReports.filter((r: any) => r.status === 'pending').length,
+        latestReports: communityReports.slice(0, 3).map((r: any) => ({
           title: r.title,
           scamType: r.scamType,
           status: r.status,
