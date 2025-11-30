@@ -4,7 +4,11 @@ import * as StellarSdk from '@stellar/stellar-sdk';
 
 export const dynamic = 'force-dynamic';
 
-const VERIFICATION_WALLET = process.env.STELLARSENTINEL_WALLET || 'GDUKMGUGDZQK6YHYA5Z6AY2G4XDSZPSZ3SW5UN3ARVMO6QSRDWP5YLEX';
+// Verification wallet addresses (must match frontend)
+const VERIFICATION_WALLET = {
+  testnet: process.env.STELLARSENTINEL_WALLET_TESTNET || 'GAELIPRPRLJFET6FWVU4KN3R32Z7WH3KCHPTVIJOIYLYIWFUWT2NXJFE',
+  mainnet: process.env.STELLARSENTINEL_WALLET || 'GDUKMGUGDZQK6YHYA5Z6AY2G4XDSZPSZ3SW5UN3ARVMO6QSRDWP5YLEX',
+};
 const VERIFICATION_FEE_XLM = 50;
 
 // Verify payment transaction
@@ -21,10 +25,14 @@ async function verifyPayment(txHash: string, contractId: string, network: 'testn
     // Get operations for this transaction
     const operations = await server.operations().forTransaction(txHash).call();
     
+    // Get correct wallet for network
+    const expectedWallet = VERIFICATION_WALLET[network];
+    console.log('Verifying payment to:', expectedWallet);
+    
     // Check if payment is to correct address
     const paymentOps = operations.records.filter((op: any) => {
       return op.type === 'payment' && 
-             op.to === VERIFICATION_WALLET &&
+             op.to === expectedWallet &&
              parseFloat(op.amount) >= VERIFICATION_FEE_XLM;
     });
 
