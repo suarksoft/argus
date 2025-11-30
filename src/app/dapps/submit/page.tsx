@@ -20,6 +20,7 @@ export default function SubmitDAppPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [bannerUrl, setBannerUrl] = useState('');
   const [screenshots, setScreenshots] = useState<string[]>(['']);
+  const [contractId, setContractId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -53,6 +54,7 @@ export default function SubmitDAppPage() {
           bannerUrl: bannerUrl.trim() || null,
           screenshots: screenshots.filter(url => url.trim()),
           ownerAddress: wallet.publicKey,
+          contractId: contractId.trim() || null,
         }),
       });
 
@@ -85,9 +87,15 @@ export default function SubmitDAppPage() {
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">
             dApp Submitted!
           </h2>
-          <p className="text-zinc-600 dark:text-zinc-400">
-            Your dApp will be reviewed before being published.
+          <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+            Your dApp with verified contract is now pending review.
           </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full text-emerald-700 dark:text-emerald-300 text-sm font-medium">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            Contract Verified
+          </div>
         </div>
       </div>
     );
@@ -168,6 +176,36 @@ export default function SubmitDAppPage() {
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
+        </div>
+
+        {/* Contract ID */}
+        <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/30 p-4">
+          <label htmlFor="contractId" className="block text-sm font-medium text-zinc-900 dark:text-white mb-2">
+            Soroban Contract ID <span className="text-rose-500">*</span>
+            <span className="ml-2 text-xs text-emerald-600 dark:text-emerald-400 font-normal">
+              (Must be verified first)
+            </span>
+          </label>
+          <input
+            type="text"
+            id="contractId"
+            required
+            value={contractId}
+            onChange={(e) => setContractId(e.target.value)}
+            placeholder="CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+            className="w-full px-4 py-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-sm"
+          />
+          <div className="mt-3 p-3 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
+            <p className="text-xs text-zinc-700 dark:text-zinc-300 font-medium mb-2">
+              📋 How to verify your contract:
+            </p>
+            <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-1 list-decimal list-inside">
+              <li>Go to <a href="/developer" className="text-emerald-600 dark:text-emerald-400 underline font-medium">Developer Portal</a> and get your verification code</li>
+              <li>Install CLI: <code className="bg-zinc-100 dark:bg-zinc-900 px-1 py-0.5 rounded text-emerald-600 dark:text-emerald-400">npm install -g argus-stellar-cli</code></li>
+              <li>Run: <code className="bg-zinc-100 dark:bg-zinc-900 px-1 py-0.5 rounded text-emerald-600 dark:text-emerald-400">argus verify --contract-id YOUR_CONTRACT_ID</code></li>
+              <li>Come back here and submit your dApp</li>
+            </ol>
+          </div>
         </div>
 
         {/* Links */}

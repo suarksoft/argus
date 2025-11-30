@@ -94,20 +94,31 @@ export default function DeveloperPage() {
 
     try {
       // Pay verification fee with contract ID for memo
-      await payVerificationFee(network, contractId.trim());
+      const paymentResult = await payVerificationFee(network, contractId.trim());
       
       // After successful payment, verify payment and generate code
-      if (paymentTxHash) {
-        await handleVerifyPayment();
+      if (paymentResult?.success && paymentResult?.txHash) {
+        console.log('Payment successful, auto-verifying...', paymentResult.txHash);
+        await handleVerifyPaymentWithTxHash(paymentResult.txHash);
       }
     } catch (err) {
       // Error is handled by the hook
     }
   };
 
-  const handleVerifyPayment = async () => {
-    if (!wallet || !paymentTxHash) {
-      setError('Payment transaction hash missing');
+  const handleVerifyPaymentWithTxHash = async (txHash: string) => {
+    if (!wallet) {
+      setError('Wallet not connected');
+      return;
+    }
+    
+    if (!contractId.trim()) {
+      setError('Missing contract ID');
+      return;
+    }
+    
+    if (!githubRepo.trim()) {
+      setError('Missing GitHub repo');
       return;
     }
 
@@ -123,7 +134,7 @@ export default function DeveloperPage() {
         body: JSON.stringify({
           contractId: contractId.trim(),
           network,
-          txHash: paymentTxHash,
+          txHash: txHash,
           githubRepo: githubRepo.trim(),
           payerAddress: wallet.publicKey,
         }),
@@ -137,7 +148,7 @@ export default function DeveloperPage() {
           contractId: contractId.trim(),
           network,
           expiresAt: data.expiresAt,
-          paymentTxHash: paymentTxHash,
+          paymentTxHash: txHash,
         });
       } else {
         setError(data.error || 'Failed to verify payment and generate code');

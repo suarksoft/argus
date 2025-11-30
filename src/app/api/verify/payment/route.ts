@@ -124,11 +124,11 @@ export async function POST(request: NextRequest) {
       });
 
       if (existingPayment) {
-        return NextResponse.json(
+      return NextResponse.json(
           { success: false, error: 'This contract already has a paid verification' },
-          { status: 400 }
-        );
-      }
+        { status: 400 }
+      );
+    }
 
       // Save payment record
       await paymentsCollection.insertOne({
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
         code,
         expiresAt: expiresAt.toISOString(),
         message: 'Payment verified. Add STELLARSENTINEL.md to your GitHub repo with this code.',
-      });
+    });
     } catch (dbError) {
       console.error('Database error:', dbError);
       return NextResponse.json(

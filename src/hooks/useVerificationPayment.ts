@@ -23,7 +23,8 @@ export interface PaymentState {
 }
 
 export const useVerificationPayment = () => {
-  const { wallet, signTransaction } = useWalletConnect();
+  const walletConnect = useWalletConnect();
+  const { wallet } = walletConnect;
   const [state, setState] = useState<PaymentState>({
     isPaying: false,
     isPaid: false,
@@ -44,7 +45,15 @@ export const useVerificationPayment = () => {
     network: 'testnet' | 'mainnet',
     contractId?: string
   ) => {
-    if (!wallet) {
+    // Get current wallet from hook to avoid closure issues
+    const currentWallet = walletConnect.wallet;
+    
+    if (!currentWallet) {
+      console.error('Wallet check failed:', {
+        walletFromHook: wallet,
+        walletFromConnect: currentWallet,
+        isConnected: walletConnect.isConnected,
+      });
       throw new Error('Wallet not connected');
     }
 
@@ -54,7 +63,7 @@ export const useVerificationPayment = () => {
       console.log('=== PAYMENT START ===');
       console.log('Network:', network);
       console.log('Contract ID:', contractId);
-      console.log('From wallet:', wallet.publicKey);
+      console.log('From wallet:', currentWallet.publicKey);
 
       // Setup Stellar SDK
       const isTestnet = network === 'testnet';
@@ -81,7 +90,7 @@ export const useVerificationPayment = () => {
 
       // Load source account
       console.log('Loading source account...');
-      const sourceAccount = await server.loadAccount(wallet.publicKey);
+      const sourceAccount = await server.loadAccount(currentWallet.publicKey);
 
       // Build memo: VERIFY:CONTRACT_ID_ILK_10_KARAKTER
       const memoText = contractId 
@@ -112,7 +121,7 @@ export const useVerificationPayment = () => {
       const xdr = transaction.toXDR();
 
       // Sign with wallet (Freighter)
-      const signedXdr = await signTransaction(xdr);
+      const signedXdr = await walletConnect.signTransaction(xdr);
 
       if (!signedXdr) {
         throw new Error('Transaction signing failed or was cancelled');
@@ -168,7 +177,7 @@ export const useVerificationPayment = () => {
 
       throw new Error(errorMessage);
     }
-  }, [wallet, signTransaction]);
+  }, [walletConnect]);
 
   const verifyPayment = useCallback(async (
     txHash: string,

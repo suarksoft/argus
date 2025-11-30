@@ -77,6 +77,9 @@ export async function GET(request: NextRequest) {
         githubUrl: dapp.githubUrl,
         twitterUrl: dapp.twitterUrl,
         discordUrl: dapp.discordUrl,
+        contractId: dapp.contractId || null,
+        contractVerified: dapp.contractVerified || false,
+        contractSecurityScore: dapp.contractSecurityScore || 0,
         ratingAverage: dapp.ratingAverage || 0,
         ratingCount: dapp.ratingCount || 0,
         totalUsers: dapp.totalUsers || 0,
@@ -136,15 +139,25 @@ export async function POST(request: NextRequest) {
       category,
       screenshots,
       ownerAddress,
+      contractId,
     } = body;
 
     console.log('=== DAPP SUBMISSION ===');
     console.log('Name:', name);
+    console.log('Contract ID:', contractId);
 
     // Validation
     if (!name || !description || !category || !ownerAddress) {
       return NextResponse.json(
         { success: false, error: 'Name, description, category, and owner address are required' },
+        { status: 400 }
+      );
+    }
+
+    // Contract ID is required
+    if (!contractId) {
+      return NextResponse.json(
+        { success: false, error: 'Contract ID is required. Please verify your contract first using Argus CLI.' },
         { status: 400 }
       );
     }
@@ -175,6 +188,42 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Check contract verification status
+      let contractVerified = false;
+      let contractSecurityScore = 0;
+      
+      if (contractId) {
+        try {
+          const verifiedContractsCollection = await getCollection('verified_contracts');
+          const verifiedContract = await verifiedContractsCollection.findOne({
+            contract_id: contractId,
+            verified: true
+          });
+          
+          if (verifiedContract) {
+            contractVerified = true;
+            contractSecurityScore = verifiedContract.security_score || 0;
+            console.log('✅ Contract verified:', contractId, 'Score:', contractSecurityScore);
+          } else {
+            // Contract must be verified to submit dApp
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: 'This contract is not verified. Please verify your contract first using Argus CLI before submitting your dApp.',
+                hint: 'Run: npx argus-stellar-cli verify --contract-id ' + contractId
+              },
+              { status: 400 }
+            );
+          }
+        } catch (err) {
+          console.error('Error checking contract verification:', err);
+          return NextResponse.json(
+            { success: false, error: 'Failed to verify contract status. Please try again.' },
+            { status: 500 }
+          );
+        }
+      }
+
       // Create dApp
       const dapp = await dappsCollection.insertOne({
         slug,
@@ -189,6 +238,9 @@ export async function POST(request: NextRequest) {
         category,
         screenshots: screenshots || [],
         ownerAddress,
+        contractId: contractId || null,
+        contractVerified,
+        contractSecurityScore,
         isVerified: false, // Needs manual verification
         ratingAverage: 0,
         ratingCount: 0,

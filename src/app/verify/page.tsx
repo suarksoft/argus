@@ -38,15 +38,28 @@ export default function VerifyPage() {
     error: paymentError 
   } = useVerificationPayment();
 
-  // Verify payment and generate code (useCallback to avoid re-creation)
+  // Verify payment and generate code
   const handleVerifyPayment = useCallback(async () => {
+    console.log('=== HANDLE VERIFY PAYMENT START ===');
+    console.log('Current state:', {
+      wallet: wallet?.publicKey,
+      paymentTxHash,
+      contractId,
+      githubRepo,
+      network,
+      loading,
+    });
+
     if (!wallet || !paymentTxHash) {
-      console.log('Missing data for verification:', { wallet: !!wallet, paymentTxHash });
+      console.log('❌ Missing wallet or paymentTxHash');
       return;
     }
 
-    if (!contractId.trim() || !githubRepo.trim()) {
-      console.error('Missing contract ID or GitHub repo');
+    const trimmedId = contractId.trim();
+    const trimmedRepo = githubRepo.trim();
+
+    if (!trimmedId || !trimmedRepo) {
+      console.error('❌ Missing contract ID or GitHub repo');
       setError('Contract ID and GitHub repo are required');
       return;
     }
@@ -56,14 +69,14 @@ export default function VerifyPage() {
 
     try {
       const requestBody = {
-        contractId: contractId.trim(),
+        contractId: trimmedId,
         network,
         txHash: paymentTxHash,
-        githubRepo: githubRepo.trim(),
+        githubRepo: trimmedRepo,
         payerAddress: wallet.publicKey,
       };
 
-      console.log('Sending payment verification request:', requestBody);
+      console.log('📤 Sending payment verification request:', requestBody);
 
       const response = await fetch('/api/verify/payment', {
         method: 'POST',
@@ -73,32 +86,36 @@ export default function VerifyPage() {
         body: JSON.stringify(requestBody),
       });
 
+      console.log('📥 Response status:', response.status);
+
       const data = await response.json();
-      console.log('Verification response:', data);
+      console.log('📥 Response data:', data);
 
       if (data.success) {
+        console.log('✅ Success! Setting verification request...');
         setVerificationRequest({
           code: data.code,
-          contractId: contractId.trim(),
+          contractId: trimmedId,
           network,
           expiresAt: data.expiresAt,
           paymentTxHash: paymentTxHash,
         });
         console.log('✅ Verification code generated:', data.code);
       } else {
+        console.error('❌ Verification failed:', data.error);
         setError(data.error || 'Failed to verify payment and generate code');
-        console.error('Verification failed:', data.error);
         if (data.missing) {
           console.error('Missing fields:', data.missing);
         }
       }
     } catch (err: any) {
-      console.error('Verification API error:', err);
-      setError('Cannot connect to server');
+      console.error('❌ Verification API error:', err);
+      setError('Cannot connect to server: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
+      console.log('=== HANDLE VERIFY PAYMENT END ===');
     }
-  }, [wallet, paymentTxHash, contractId, githubRepo, network]);
+  }, [wallet, paymentTxHash, contractId, githubRepo, network, setError, setLoading, setVerificationRequest]);
 
   // Update step based on state
   useEffect(() => {
@@ -117,11 +134,46 @@ export default function VerifyPage() {
 
   // Auto-verify payment after successful payment (ONCE)
   useEffect(() => {
-    if (isPaid && paymentTxHash && !verificationRequest && wallet && !loading) {
-      console.log('Payment successful, auto-verifying...', paymentTxHash);
+    const checks = {
+      'isPaid': isPaid,
+      'hasPaymentTxHash': !!paymentTxHash,
+      'paymentTxHash': paymentTxHash,
+      'NO verificationRequest': !verificationRequest,
+      'hasWallet': !!wallet,
+      'NOT loading': !loading,
+      'hasContractId': !!contractId.trim(),
+      'contractId': contractId,
+      'hasGithubRepo': !!githubRepo.trim(),
+      'githubRepo': githubRepo,
+    };
+    
+    console.log('=== useEffect CHECK ===');
+    Object.entries(checks).forEach(([key, value]) => {
+      const status = value ? '✅' : '❌';
+      console.log(`${status} ${key}:`, value);
+    });
+
+    // Strict checks to prevent multiple calls
+    if (
+      isPaid && 
+      paymentTxHash && 
+      !verificationRequest && 
+      wallet && 
+      !loading &&
+      contractId.trim() &&
+      githubRepo.trim()
+    ) {
+      console.log('🎯 === AUTO-VERIFY TRIGGERED ===');
+      console.log('Payment TX:', paymentTxHash);
+      console.log('Contract ID:', contractId.trim());
+      console.log('GitHub Repo:', githubRepo.trim());
+      
+      // Call only once
       handleVerifyPayment();
+    } else {
+      console.log('❌ Auto-verify NOT triggered - check conditions above');
     }
-  }, [isPaid, paymentTxHash, verificationRequest, wallet, loading, handleVerifyPayment]);
+  }, [isPaid, paymentTxHash, verificationRequest, wallet, loading, contractId, githubRepo, handleVerifyPayment]);
 
   const handleContractSubmit = () => {
     const trimmedId = contractId.trim();
@@ -162,19 +214,26 @@ export default function VerifyPage() {
       return;
     }
 
+    const trimmedId = contractId.trim();
+    if (!trimmedId) {
+      setError('Contract ID is required');
+      return;
+    }
+
     setError(null);
 
     try {
       console.log('Starting payment...', {
         network,
-        contractId: contractId.trim(),
+        contractId: trimmedId,
         wallet: wallet.publicKey,
       });
 
       // Pay verification fee with contract ID for memo
-      const result = await payVerificationFee(network, contractId.trim());
+      const result = await payVerificationFee(network, trimmedId);
       
       console.log('Payment result:', result);
+      console.log('Payment TX Hash:', result.txHash);
       
       // Payment successful - useEffect will trigger handleVerifyPayment
     } catch (err: any) {
