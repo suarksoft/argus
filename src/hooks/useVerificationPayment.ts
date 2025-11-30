@@ -43,15 +43,16 @@ export const useVerificationPayment = () => {
 
   const payVerificationFee = useCallback(async (
     network: 'testnet' | 'mainnet',
-    contractId?: string
+    contractId?: string,
+    walletPublicKey?: string
   ) => {
-    // Get current wallet from hook to avoid closure issues
-    const currentWallet = walletConnect.wallet;
+    // Use passed wallet or get from hook
+    const publicKey = walletPublicKey || walletConnect.wallet?.publicKey;
     
-    if (!currentWallet) {
+    if (!publicKey) {
       console.error('Wallet check failed:', {
-        walletFromHook: wallet,
-        walletFromConnect: currentWallet,
+        passedWallet: walletPublicKey,
+        walletFromConnect: walletConnect.wallet?.publicKey,
         isConnected: walletConnect.isConnected,
       });
       throw new Error('Wallet not connected');
@@ -63,7 +64,7 @@ export const useVerificationPayment = () => {
       console.log('=== PAYMENT START ===');
       console.log('Network:', network);
       console.log('Contract ID:', contractId);
-      console.log('From wallet:', currentWallet.publicKey);
+      console.log('From wallet:', publicKey);
 
       // Setup Stellar SDK
       const isTestnet = network === 'testnet';
@@ -90,7 +91,7 @@ export const useVerificationPayment = () => {
 
       // Load source account
       console.log('Loading source account...');
-      const sourceAccount = await server.loadAccount(currentWallet.publicKey);
+      const sourceAccount = await server.loadAccount(publicKey);
 
       // Build memo: VERIFY:CONTRACT_ID_ILK_10_KARAKTER
       const memoText = contractId 

@@ -93,8 +93,8 @@ export default function DeveloperPage() {
     }
 
     try {
-      // Pay verification fee with contract ID for memo
-      const paymentResult = await payVerificationFee(network, contractId.trim());
+      // Pay verification fee with contract ID for memo - pass wallet publicKey explicitly
+      const paymentResult = await payVerificationFee(network, contractId.trim(), wallet.publicKey);
       
       // After successful payment, verify payment and generate code
       if (paymentResult?.success && paymentResult?.txHash) {
