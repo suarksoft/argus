@@ -160,6 +160,13 @@ export async function POST(
         _id: threat._id,
       });
 
+      if (!updatedThreat) {
+        return NextResponse.json(
+          { success: false, error: 'Failed to fetch updated threat' },
+          { status: 500 }
+        );
+      }
+
       console.log('✅ Vote recorded:', voteType);
 
       return NextResponse.json({

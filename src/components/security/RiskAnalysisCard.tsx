@@ -200,7 +200,7 @@ export function RiskAnalysisCard({
       )}
 
       {/* Community Reports Section (GERÇEK VERİ) */}
-      {communityInfo && communityInfo.reportCount > 0 && (
+      {communityInfo && communityInfo.reportCount && communityInfo.reportCount > 0 && (
         <div className="rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-500/30 p-4">
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,9 +211,9 @@ export function RiskAnalysisCard({
                 Community Reports Found
               </h5>
               <p className="text-sm text-rose-800 dark:text-rose-200 mb-2">
-                {communityInfo.verifiedReportCount > 0 
+                {communityInfo.verifiedReportCount && communityInfo.verifiedReportCount > 0 
                   ? `${communityInfo.verifiedReportCount} verified report(s) from the Argus community`
-                  : `${communityInfo.reportCount} report(s) under review`
+                  : `${communityInfo.reportCount || 0} report(s) under review`
                 }
               </p>
               {communityInfo.latestReports && communityInfo.latestReports.length > 0 && (

@@ -18,8 +18,11 @@ async function verifyPayment(txHash: string, contractId: string, network: 'testn
 
     const transaction = await server.transactions().transaction(txHash).call();
     
+    // Get operations for this transaction
+    const operations = await server.operations().forTransaction(txHash).call();
+    
     // Check if payment is to correct address
-    const paymentOps = transaction.operations().records.filter((op: any) => {
+    const paymentOps = operations.records.filter((op: any) => {
       return op.type === 'payment' && 
              op.to === VERIFICATION_WALLET &&
              parseFloat(op.amount) >= VERIFICATION_FEE_XLM;
