@@ -31,7 +31,7 @@ const resources: Array<Resource> = [
     href: '/defense-wallet',
     name: 'Defense Wallet',
     description:
-      'Secure wallet interface with built-in threat detection and real-time risk analysis for all transactions.',
+      'Connect Freighter and analyze any address before sending. AI risk scoring detects scams, new accounts, and suspicious patterns in real-time.',
     icon: UserIcon,
     pattern: {
       y: 16,
@@ -42,10 +42,10 @@ const resources: Array<Resource> = [
     },
   },
   {
-    href: '/community',
-    name: 'Intelligence Hub',
+    href: '/developer',
+    name: 'Contract Verification',
     description:
-      'Community-driven threat database with live updates, voting system, and verified security reports.',
+      'Verify your Soroban contracts with our CLI. WASM hash matching proves your deployed code matches your source. Get a verified badge.',
     icon: ChatBubbleIcon,
     pattern: {
       y: -6,
@@ -59,7 +59,7 @@ const resources: Array<Resource> = [
     href: '/community/threats',
     name: 'Threat Database',
     description:
-      'Browse and search verified threats including phishing sites, fake tokens, and rug pulls.',
+      'Browse reported scams, phishing addresses, and rug pulls. Community-verified with upvotes and evidence links.',
     icon: EnvelopeIcon,
     pattern: {
       y: 32,
@@ -70,10 +70,10 @@ const resources: Array<Resource> = [
     },
   },
   {
-    href: '/developer',
-    name: 'Developer Tools',
+    href: '/community/report',
+    name: 'Report & Earn',
     description:
-      'API access, SDKs, and integration guides for building security-aware Stellar applications.',
+      'Report scams and malicious addresses. Earn reputation points and climb the leaderboard as a threat hunter.',
     icon: UsersIcon,
     pattern: {
       y: 22,

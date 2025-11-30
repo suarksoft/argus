@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as React from 'react';
 import { Button } from '@/components/Button';
 import { useWalletConnect } from '@/hooks/useWalletConnect';
@@ -38,6 +38,68 @@ export default function VerifyPage() {
     error: paymentError 
   } = useVerificationPayment();
 
+  // Verify payment and generate code (useCallback to avoid re-creation)
+  const handleVerifyPayment = useCallback(async () => {
+    if (!wallet || !paymentTxHash) {
+      console.log('Missing data for verification:', { wallet: !!wallet, paymentTxHash });
+      return;
+    }
+
+    if (!contractId.trim() || !githubRepo.trim()) {
+      console.error('Missing contract ID or GitHub repo');
+      setError('Contract ID and GitHub repo are required');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const requestBody = {
+        contractId: contractId.trim(),
+        network,
+        txHash: paymentTxHash,
+        githubRepo: githubRepo.trim(),
+        payerAddress: wallet.publicKey,
+      };
+
+      console.log('Sending payment verification request:', requestBody);
+
+      const response = await fetch('/api/verify/payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+      console.log('Verification response:', data);
+
+      if (data.success) {
+        setVerificationRequest({
+          code: data.code,
+          contractId: contractId.trim(),
+          network,
+          expiresAt: data.expiresAt,
+          paymentTxHash: paymentTxHash,
+        });
+        console.log('✅ Verification code generated:', data.code);
+      } else {
+        setError(data.error || 'Failed to verify payment and generate code');
+        console.error('Verification failed:', data.error);
+        if (data.missing) {
+          console.error('Missing fields:', data.missing);
+        }
+      }
+    } catch (err: any) {
+      console.error('Verification API error:', err);
+      setError('Cannot connect to server');
+    } finally {
+      setLoading(false);
+    }
+  }, [wallet, paymentTxHash, contractId, githubRepo, network]);
+
   // Update step based on state
   useEffect(() => {
     if (verificationRequest) {
@@ -53,13 +115,13 @@ export default function VerifyPage() {
     }
   }, [isConnected, wallet, isPaid, paymentTxHash, verificationRequest, contractId]);
 
-  // Auto-verify payment after successful payment
+  // Auto-verify payment after successful payment (ONCE)
   useEffect(() => {
     if (isPaid && paymentTxHash && !verificationRequest && wallet && !loading) {
       console.log('Payment successful, auto-verifying...', paymentTxHash);
       handleVerifyPayment();
     }
-  }, [isPaid, paymentTxHash, verificationRequest, wallet, loading]);
+  }, [isPaid, paymentTxHash, verificationRequest, wallet, loading, handleVerifyPayment]);
 
   const handleContractSubmit = () => {
     const trimmedId = contractId.trim();
@@ -118,60 +180,6 @@ export default function VerifyPage() {
     } catch (err: any) {
       console.error('Payment error:', err);
       setError(err.message || 'Payment failed');
-    }
-  };
-
-  const handleVerifyPayment = async () => {
-    if (!wallet || !paymentTxHash) {
-      console.log('Missing data for verification:', { wallet: !!wallet, paymentTxHash });
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      console.log('Verifying payment and generating code...', {
-        contractId: contractId.trim(),
-        txHash: paymentTxHash,
-        githubRepo: githubRepo.trim(),
-      });
-
-      const response = await fetch('/api/verify/payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contractId: contractId.trim(),
-          network,
-          txHash: paymentTxHash,
-          githubRepo: githubRepo.trim(),
-          payerAddress: wallet.publicKey,
-        }),
-      });
-
-      const data = await response.json();
-      console.log('Verification response:', data);
-
-      if (data.success) {
-        setVerificationRequest({
-          code: data.code,
-          contractId: contractId.trim(),
-          network,
-          expiresAt: data.expiresAt,
-          paymentTxHash: paymentTxHash,
-        });
-        console.log('✅ Verification code generated:', data.code);
-      } else {
-        setError(data.error || 'Failed to verify payment and generate code');
-        console.error('Verification failed:', data.error);
-      }
-    } catch (err: any) {
-      console.error('Verification API error:', err);
-      setError('Cannot connect to server');
-    } finally {
-      setLoading(false);
     }
   };
 

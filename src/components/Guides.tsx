@@ -5,22 +5,22 @@ const guides = [
   {
     href: '/defense-wallet',
     name: 'Defense Wallet',
-    description: 'Secure wallet with built-in threat detection and risk analysis.',
+    description: 'Connect your Freighter wallet and get AI-powered risk scores before every transaction. Real-time alerts for suspicious addresses.',
+  },
+  {
+    href: '/developer',
+    name: 'Contract Verification',
+    description: 'Verify your Soroban smart contracts on-chain. WASM hash matching, source code publishing, and verified badge for your dApp.',
   },
   {
     href: '/community',
-    name: 'Intelligence Hub',
-    description: 'Community-powered threat database and real-time alerts.',
+    name: 'Threat Intelligence',
+    description: 'Community-reported scams, phishing sites, and rug pulls. Vote on reports and earn reputation as a threat hunter.',
   },
   {
-    href: '/community/report',
-    name: 'Report Threats',
-    description: 'Help protect the community by reporting scams and phishing.',
-  },
-  {
-    href: '/community/leaderboard',
-    name: 'Leaderboard',
-    description: 'Top threat hunters and their contributions to security.',
+    href: '/contracts',
+    name: 'Verified Contracts',
+    description: 'Browse verified Soroban contracts with public source code. Know exactly what you are interacting with.',
   },
 ]
 

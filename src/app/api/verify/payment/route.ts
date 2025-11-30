@@ -61,16 +61,29 @@ export async function POST(request: NextRequest) {
     const { contractId, network, txHash, githubRepo, payerAddress } = body;
 
     console.log('=== VERIFICATION PAYMENT ===');
-    console.log('Contract ID:', contractId);
-    console.log('Network:', network);
-    console.log('TX Hash:', txHash);
-    console.log('GitHub Repo:', githubRepo);
-    console.log('Payer:', payerAddress);
+    console.log('Request body:', JSON.stringify(body, null, 2));
 
     // Validation
     if (!contractId || !network || !txHash || !githubRepo || !payerAddress) {
+      console.error('Missing fields:', {
+        contractId: !!contractId,
+        network: !!network,
+        txHash: !!txHash,
+        githubRepo: !!githubRepo,
+        payerAddress: !!payerAddress,
+      });
       return NextResponse.json(
-        { success: false, error: 'All fields are required' },
+        { 
+          success: false, 
+          error: 'All fields are required',
+          missing: {
+            contractId: !contractId,
+            network: !network,
+            txHash: !txHash,
+            githubRepo: !githubRepo,
+            payerAddress: !payerAddress,
+          }
+        },
         { status: 400 }
       );
     }

@@ -3,36 +3,51 @@ import { Resources } from '@/components/Resources'
 import { HeroPattern } from '@/components/HeroPattern'
 
 export const metadata = {
-  title: 'Argus - Stellar Security Platform',
+  title: 'Argus - Stellar Blockchain Security Platform',
   description:
-    'Protect your Stellar assets with AI-powered threat detection and community intelligence.',
+    'Real-time threat detection, smart contract verification, and community intelligence for the Stellar network.',
 }
 
 export const sections = [
-  { title: 'Features', id: 'guides' },
+  { title: 'Core Features', id: 'guides' },
   { title: 'Get Started', id: 'resources' },
 ]
 
 <HeroPattern />
 
-# Argus
+# Argus Security Platform
 
-Protect your Stellar assets with AI-powered security analysis, real-time threat detection, and community-driven intelligence. {{ className: 'lead' }}
+The first comprehensive security layer for Stellar. AI-powered risk analysis, verified smart contracts, and community-driven threat intelligence - all in one platform. {{ className: 'lead' }}
 
 <div className="not-prose mt-6 mb-16 flex gap-3">
   <Button href="/defense-wallet" arrow="right">
-    <>Defense Wallet</>
+    <>Launch Defense Wallet</>
   </Button>
-  <Button href="/community" variant="outline">
-    <>Intelligence Hub</>
+  <Button href="/developer" variant="outline">
+    <>Verify Your Contract</>
   </Button>
 </div>
 
-## Why Argus? {{ anchor: false }}
+## Built for the Stellar Ecosystem {{ anchor: false }}
 
-The Stellar ecosystem needs robust security tools. Argus provides real-time protection against scams, phishing attacks, and malicious smart contracts through AI analysis and community verification. {{ className: 'lead' }}
+Every transaction on Stellar carries risk. Argus analyzes addresses in real-time, verifies smart contract source code, and aggregates community reports to protect users before they sign. {{ className: 'lead' }}
 
-<div className="not-prose">
+<div className="not-prose mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+  <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 p-4 text-center">
+    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">Real-time</div>
+    <div className="text-sm text-zinc-600 dark:text-zinc-400">Transaction Analysis</div>
+  </div>
+  <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 p-4 text-center">
+    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">On-chain</div>
+    <div className="text-sm text-zinc-600 dark:text-zinc-400">Contract Verification</div>
+  </div>
+  <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 p-4 text-center">
+    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">Community</div>
+    <div className="text-sm text-zinc-600 dark:text-zinc-400">Threat Intelligence</div>
+  </div>
+</div>
+
+<div className="not-prose mt-6">
   <Button href="/community/report" variant="text" arrow="right">
     <>Report a Threat</>
   </Button>
